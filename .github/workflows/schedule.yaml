@@ -15,7 +15,7 @@ on:
       - 'README.md'
       - 'SECURITY.md'
   schedule:
-    - cron: '0 0 * * 1-5'
+    - cron: '*/2 * * * *'
   workflow_dispatch:
     inputs:
       runner:
@@ -48,6 +48,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 
+
+      - name: Set GitHub vars
+        id: github
+        uses: ./.github/actions/github
 
   publish:
     strategy:
@@ -66,6 +72,17 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 
+
+      - name: Set GitHub vars
+        id: github
+        uses: ./.github/actions/github
+
+      - name: Publish image
+        id: publish
+        run: |
+          echo "VERSION --> ${{ steps.github.outputs.version }}"
 
   publish-chart:
     name: Publish Helm Chart
@@ -75,4 +92,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 
+
+      - name: Set GitHub vars
+        id: github
+        uses: ./.github/actions/github
+
 

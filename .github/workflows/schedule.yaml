@@ -1,0 +1,78 @@
+name: Unstable Release
+
+on:
+  push:
+    branches:
+      - 'main'
+    tags-ignore:
+      - '*'
+    paths-ignore:
+      - 'demo/**'
+      - 'docs/**'
+      - 'examples/**'
+      - 'helm/ggbridge/README.md'
+      - 'LICENSE'
+      - 'README.md'
+      - 'SECURITY.md'
+  schedule:
+    - cron: '0 0 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Specify the runner to use"
+        required: true
+        default: "ubuntu-latest"
+
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+
+jobs:
+  build-packages:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: amd64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+    name: Build packages for ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+  publish:
+    strategy:
+      matrix:
+        include:
+          - variant: prod
+            tag-suffix: ''
+          - variant: shell
+            tag-suffix: '-shell'
+    name: Publish ${{ matrix.variant }} image
+    needs: [build-packages]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: imjasonh/setup-crane@v0.4
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+  publish-chart:
+    name: Publish Helm Chart
+    needs: [publish]
+    runs-on: ubuntu-24.04
+    if: ${{ github.event_name == 'schedule' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+

@@ -4,24 +4,10 @@ on:
   push:
     branches:
       - 'main'
-    tags-ignore:
-      - '*'
-    paths-ignore:
-      - 'demo/**'
-      - 'docs/**'
-      - 'examples/**'
-      - 'helm/ggbridge/README.md'
-      - 'LICENSE'
-      - 'README.md'
-      - 'SECURITY.md'
+    tags:
+      - 'v*'
   schedule:
-    - cron: '0 0 * * 1-5'
-  workflow_dispatch:
-    inputs:
-      runner:
-        description: "Specify the runner to use"
-        required: true
-        default: "ubuntu-latest"
+    - cron: '*/2 * * * *'
 
 permissions:
   contents: read
@@ -48,6 +34,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 
+
+      - name: Set GitHub vars
+        id: github
+        uses: ./.github/actions/github
 
   publish:
     strategy:
@@ -66,6 +58,17 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 
+
+      - name: Set GitHub vars
+        id: github
+        uses: ./.github/actions/github
+
+      - name: Publish image
+        id: publish
+        run: |
+          echo "VERSION --> ${{ steps.github.outputs.version }}"
 
   publish-chart:
     name: Publish Helm Chart
@@ -75,4 +78,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 
+
+      - name: Set GitHub vars
+        id: github
+        uses: ./.github/actions/github
+
 
